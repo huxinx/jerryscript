@@ -916,6 +916,60 @@ ecma_number_exp (ecma_number_t num) /**< valid finite number */
   return sum;
 } /* ecma_number_exp */
 
+
+/**
+ * Helper for preprocessing, convert ecma_number_t to uint_32
+ *
+ */
+void
+ecma_number_to_u32(ecma_number_t num, bool *p_infinity, bool *p_sign,
+		 uint64_t *p_cast_to_u64)
+{
+	const uint32_t fraction_pos = 0;
+	const uint32_t biased_exp_pos = fraction_pos + ECMA_NUMBER_FRACTION_WIDTH;
+	const uint32_t sign_pos = ECMA_NUMBER_FRACTION_WIDTH + ECMA_NUMBER_BIASED_EXP_WIDTH;
+
+	union
+	{
+		uint64_t u64_value;
+		ecma_number_t float_value;
+	} u;
+
+	u.float_value = num;
+	uint64_t packed_value = u.u64_value;
+
+	uint32_t biased_exp = (uint32_t) (((packed_value) & ~(1ull << sign_pos)) >> biased_exp_pos);
+	uint64_t fraction = (packed_value & ((1ull << ECMA_NUMBER_FRACTION_WIDTH) - 1));
+
+	*p_infinity = ((biased_exp  == (1u << ECMA_NUMBER_BIASED_EXP_WIDTH) - 1)
+			&& (fraction == 0));
+
+	if (*p_infinity) return;
+
+	if (p_sign != NULL)
+	{
+		*p_sign = ((packed_value >> sign_pos) != 0);
+	}
+	/* mask sign pos, get abs num */
+	packed_value &= ((1ull << sign_pos) - 1);
+
+	const int32_t dot_shift = ECMA_NUMBER_FRACTION_WIDTH;
+	int32_t exponent = 0;
+
+	if (biased_exp != 0)
+	{
+		JERRY_ASSERT (biased_exp > 0 && biased_exp < (1u << ECMA_NUMBER_BIASED_EXP_WIDTH) - 1);
+		JERRY_ASSERT ((fraction & (1ull << ECMA_NUMBER_FRACTION_WIDTH)) == 0);
+		
+		exponent = (int32_t) biased_exp - ecma_number_exponent_bias;
+		*p_cast_to_u64 = (1ull << exponent) | (fraction >> (dot_shift - exponent));
+	}
+	else
+	{
+		*p_cast_to_u64 = 0;
+	}
+}
+
 /**
  * @}
  * @}
