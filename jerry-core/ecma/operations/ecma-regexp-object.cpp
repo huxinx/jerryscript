@@ -334,55 +334,88 @@ re_canonicalize (ecma_char_t ch, /**< character */
  * @return completion value
  *         Returned value must be freed with ecma_free_completion_value
  */
+
+#define	NEXT switch(op) {\
+		case RE_OP_MATCH: goto RE_OP_MATCH; \
+		case RE_OP_CHAR:  goto RE_OP_CHAR; \
+		case RE_OP_PERIOD: goto RE_OP_PERIOD; \
+		case RE_OP_ASSERT_START: goto RE_OP_ASSERT_START; \
+		case RE_OP_ASSERT_END: goto RE_OP_ASSERT_END; \
+		case RE_OP_ASSERT_WORD_BOUNDARY: goto RE_OP_ASSERT_WORD_BOUNDARY; \
+		case RE_OP_ASSERT_NOT_WORD_BOUNDARY: goto RE_OP_ASSERT_NOT_WORD_BOUNDARY; \
+		case RE_OP_LOOKAHEAD_POS: goto RE_OP_LOOKAHEAD_POS; \
+		case RE_OP_LOOKAHEAD_NEG: goto RE_OP_LOOKAHEAD_NEG; \
+		case RE_OP_CHAR_CLASS: goto RE_OP_CHAR_CLASS; \
+		case RE_OP_INV_CHAR_CLASS: goto RE_OP_INV_CHAR_CLASS; \
+		case RE_OP_BACKREFERENCE: goto RE_OP_BACKREFERENCE; \
+		case RE_OP_SAVE_AT_START: goto RE_OP_SAVE_AT_START; \
+		case RE_OP_SAVE_AND_MATCH: goto RE_OP_SAVE_AND_MATCH; \
+		case RE_OP_ALTERNATIVE: goto RE_OP_ALTERNATIVE; \
+		case RE_OP_CAPTURE_NON_GREEDY_ZERO_GROUP_START: goto RE_OP_CAPTURE_NON_GREEDY_ZERO_GROUP_START; \
+		case RE_OP_NON_CAPTURE_NON_GREEDY_ZERO_GROUP_START: goto RE_OP_NON_CAPTURE_NON_GREEDY_ZERO_GROUP_START; \
+		case RE_OP_CAPTURE_GROUP_START: goto RE_OP_CAPTURE_GROUP_START; \
+		case RE_OP_CAPTURE_GREEDY_ZERO_GROUP_START: goto RE_OP_CAPTURE_GREEDY_ZERO_GROUP_START; \
+		case RE_OP_NON_CAPTURE_GROUP_START: goto RE_OP_NON_CAPTURE_GROUP_START; \
+		case RE_OP_NON_CAPTURE_GREEDY_ZERO_GROUP_START: goto RE_OP_NON_CAPTURE_GREEDY_ZERO_GROUP_START; \
+		case RE_OP_CAPTURE_NON_GREEDY_GROUP_END: goto RE_OP_CAPTURE_NON_GREEDY_GROUP_END; \
+		case RE_OP_NON_CAPTURE_NON_GREEDY_GROUP_END: goto RE_OP_NON_CAPTURE_NON_GREEDY_GROUP_END; \
+		case RE_OP_CAPTURE_GREEDY_GROUP_END: goto RE_OP_CAPTURE_GREEDY_GROUP_END; \
+		case RE_OP_NON_CAPTURE_GREEDY_GROUP_END: goto RE_OP_NON_CAPTURE_GREEDY_GROUP_END; \
+		case RE_OP_NON_GREEDY_ITERATOR: goto RE_OP_NON_GREEDY_ITERATOR; \
+		case RE_OP_GREEDY_ITERATOR: goto RE_OP_GREEDY_ITERATOR; \
+		default:goto DEFAULT;}							
+
 static ecma_completion_value_t
-re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
-                 re_bytecode_t *bc_p, /**< pointer to the current RegExp bytecode */
-                 lit_utf8_byte_t *str_p, /**< input string pointer */
-                 lit_utf8_byte_t **out_str_p) /**< Output: matching substring iterator */
+re_match_regexp (re_matcher_ctx_t *re_ctx_p, 
+                 re_bytecode_t *bc_p, 
+                 lit_utf8_byte_t *str_p, 
+                 lit_utf8_byte_t **out_str_p) 
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
   re_opcode_t op;
 
   lit_utf8_byte_t *str_curr_p = str_p;
 
-  while ((op = re_get_opcode (&bc_p)))
+	op = re_get_opcode (&bc_p);
+
+  while (op)
   {
-    switch (op)
-    {
-      case RE_OP_MATCH:
+			NEXT;
+      
+		  RE_OP_MATCH:
       {
         JERRY_DDLOG ("Execute RE_OP_MATCH: match\n");
         *out_str_p = str_curr_p;
         ret_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_TRUE);
-        return ret_value; /* match */
+        return ret_value; 
       }
-      case RE_OP_CHAR:
+      RE_OP_CHAR:
       {
         if (str_curr_p >= re_ctx_p->input_end_p)
         {
-          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
         }
 
         bool is_ignorecase = re_ctx_p->flags & RE_FLAG_IGNORE_CASE;
-        ecma_char_t ch1 = (ecma_char_t) re_get_value (&bc_p); /* Already canonicalized. */
+        ecma_char_t ch1 = (ecma_char_t) re_get_value (&bc_p); 
         ecma_char_t ch2 = re_canonicalize (lit_utf8_read_next (&str_curr_p), is_ignorecase);
         JERRY_DDLOG ("Character matching %d to %d: ", ch1, ch2);
 
         if (ch1 != ch2)
         {
           JERRY_DDLOG ("fail\n");
-          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
         }
 
         JERRY_DDLOG ("match\n");
 
-        break; /* tail merge */
+				NEXT;
       }
-      case RE_OP_PERIOD:
+      RE_OP_PERIOD:
       {
         if (str_curr_p >= re_ctx_p->input_end_p)
         {
-          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
         }
 
         ecma_char_t ch = lit_utf8_read_next (&str_curr_p);
@@ -391,70 +424,70 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
         if (lit_char_is_line_terminator (ch))
         {
           JERRY_DDLOG ("fail\n");
-          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
         }
 
         JERRY_DDLOG ("match\n");
-        break; /* tail merge */
+				NEXT;
       }
-      case RE_OP_ASSERT_START:
+      RE_OP_ASSERT_START:
       {
         JERRY_DDLOG ("Execute RE_OP_ASSERT_START: ");
 
         if (str_curr_p <= re_ctx_p->input_start_p)
         {
           JERRY_DDLOG ("match\n");
-          break;
+					NEXT;
         }
 
         if (!(re_ctx_p->flags & RE_FLAG_MULTILINE))
         {
           JERRY_DDLOG ("fail\n");
-          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
         }
 
         if (lit_char_is_line_terminator (lit_utf8_peek_prev (str_curr_p)))
         {
           JERRY_DDLOG ("match\n");
-          break;
+					NEXT;
         }
 
         JERRY_DDLOG ("fail\n");
-        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
       }
-      case RE_OP_ASSERT_END:
+      RE_OP_ASSERT_END:
       {
         JERRY_DDLOG ("Execute RE_OP_ASSERT_END: ");
 
         if (str_curr_p >= re_ctx_p->input_end_p)
         {
           JERRY_DDLOG ("match\n");
-          break; /* tail merge */
+					NEXT;
         }
 
         if (!(re_ctx_p->flags & RE_FLAG_MULTILINE))
         {
           JERRY_DDLOG ("fail\n");
-          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
         }
 
         if (lit_char_is_line_terminator (lit_utf8_peek_next (str_curr_p)))
         {
           JERRY_DDLOG ("match\n");
-          break; /* tail merge */
+					NEXT;
         }
 
         JERRY_DDLOG ("fail\n");
-        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
       }
-      case RE_OP_ASSERT_WORD_BOUNDARY:
-      case RE_OP_ASSERT_NOT_WORD_BOUNDARY:
+      RE_OP_ASSERT_WORD_BOUNDARY:
+      RE_OP_ASSERT_NOT_WORD_BOUNDARY:
       {
         bool is_wordchar_left, is_wordchar_right;
 
         if (str_curr_p <= re_ctx_p->input_start_p)
         {
-          is_wordchar_left = false;  /* not a wordchar */
+          is_wordchar_left = false;  
         }
         else
         {
@@ -463,7 +496,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
 
         if (str_curr_p >= re_ctx_p->input_end_p)
         {
-          is_wordchar_right = false;  /* not a wordchar */
+          is_wordchar_right = false;  
         }
         else
         {
@@ -476,7 +509,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (is_wordchar_left == is_wordchar_right)
           {
             JERRY_DDLOG ("fail\n");
-            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
           }
         }
         else
@@ -487,15 +520,15 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (is_wordchar_left != is_wordchar_right)
           {
             JERRY_DDLOG ("fail\n");
-            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
           }
         }
 
         JERRY_DDLOG ("match\n");
-        break; /* tail merge */
+				NEXT;
       }
-      case RE_OP_LOOKAHEAD_POS:
-      case RE_OP_LOOKAHEAD_NEG:
+      RE_OP_LOOKAHEAD_POS:
+      RE_OP_LOOKAHEAD_NEG:
       {
         ecma_completion_value_t match_value = ecma_make_empty_completion_value ();
         lit_utf8_byte_t *sub_str_p = NULL;
@@ -535,7 +568,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           else
           {
             JERRY_DDLOG ("fail\n");
-            match_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+            match_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
           }
         }
 
@@ -548,7 +581,6 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           else
           {
             JERRY_ASSERT (ecma_is_value_boolean (match_value));
-            /* restore saved */
             memcpy (re_ctx_p->saved_p, saved_bck_p, size);
           }
         }
@@ -556,8 +588,8 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
         MEM_FINALIZE_LOCAL_ARRAY (saved_bck_p);
         return match_value;
       }
-      case RE_OP_CHAR_CLASS:
-      case RE_OP_INV_CHAR_CLASS:
+      RE_OP_CHAR_CLASS:
+      RE_OP_INV_CHAR_CLASS:
       {
         uint32_t num_of_ranges;
         bool is_match;
@@ -566,7 +598,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
         if (str_curr_p >= re_ctx_p->input_end_p)
         {
           JERRY_DDLOG ("fail\n");
-          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
         }
 
         bool is_ignorecase = re_ctx_p->flags & RE_FLAG_IGNORE_CASE;
@@ -584,7 +616,6 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
 
           if (curr_ch >= ch1 && curr_ch <= ch2)
           {
-            /* We must read all the ranges from bytecode. */
             is_match = true;
           }
           num_of_ranges--;
@@ -595,7 +626,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (!is_match)
           {
             JERRY_DDLOG ("fail\n");
-            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
           }
         }
         else
@@ -604,25 +635,25 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (is_match)
           {
             JERRY_DDLOG ("fail\n");
-            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
           }
         }
         JERRY_DDLOG ("match\n");
-        break; /* tail merge */
+				NEXT;
       }
-      case RE_OP_BACKREFERENCE:
+      RE_OP_BACKREFERENCE:
       {
         uint32_t backref_idx;
 
         backref_idx = re_get_value (&bc_p);
         JERRY_DDLOG ("Execute RE_OP_BACKREFERENCE (idx: %d): ", backref_idx);
-        backref_idx *= 2;  /* backref n -> saved indices [n*2, n*2+1] */
+        backref_idx *= 2;  
         JERRY_ASSERT (backref_idx >= 2 && backref_idx + 1 < re_ctx_p->num_of_captures);
 
         if (!re_ctx_p->saved_p[backref_idx] || !re_ctx_p->saved_p[backref_idx + 1])
         {
           JERRY_DDLOG ("match\n");
-          break; /* capture is 'undefined', always matches! */
+					NEXT;
         }
 
         lit_utf8_byte_t *sub_str_p = re_ctx_p->saved_p[backref_idx];
@@ -634,7 +665,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (str_curr_p >= re_ctx_p->input_end_p)
           {
             JERRY_DDLOG ("fail\n");
-            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
           }
 
           ch1 = lit_utf8_read_next (&sub_str_p);
@@ -643,13 +674,13 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (ch1 != ch2)
           {
             JERRY_DDLOG ("fail\n");
-            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+            return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
           }
         }
         JERRY_DDLOG ("match\n");
-        break; /* tail merge */
+				NEXT;
       }
-      case RE_OP_SAVE_AT_START:
+      RE_OP_SAVE_AT_START:
       {
         re_bytecode_t *old_bc_p;
 
@@ -665,7 +696,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (ecma_is_value_true (match_value))
           {
             *out_str_p = sub_str_p;
-            return match_value; /* match */
+            return match_value; 
           }
           else if (ecma_is_completion_value_throw (match_value))
           {
@@ -678,20 +709,17 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
         bc_p = old_bc_p;
 
         re_ctx_p->saved_p[RE_GLOBAL_START_IDX] = old_start_p;
-        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
       }
-      case RE_OP_SAVE_AND_MATCH:
+      RE_OP_SAVE_AND_MATCH:
       {
         JERRY_DDLOG ("End of pattern is reached: match\n");
         re_ctx_p->saved_p[RE_GLOBAL_END_IDX] = str_curr_p;
         *out_str_p = str_curr_p;
-        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_TRUE); /* match */
+        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_TRUE); 
       }
-      case RE_OP_ALTERNATIVE:
+      RE_OP_ALTERNATIVE:
       {
-        /*
-        *  Alternatives should be jump over, when alternative opcode appears.
-        */
         uint32_t offset = re_get_value (&bc_p);
         JERRY_DDLOG ("Execute RE_OP_ALTERNATIVE");
         bc_p += offset;
@@ -705,21 +733,17 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
         }
 
         JERRY_DDLOG ("\n");
-        break; /* tail merge */
+				NEXT;
       }
-      case RE_OP_CAPTURE_NON_GREEDY_ZERO_GROUP_START:
-      case RE_OP_NON_CAPTURE_NON_GREEDY_ZERO_GROUP_START:
+      RE_OP_CAPTURE_NON_GREEDY_ZERO_GROUP_START:
+      RE_OP_NON_CAPTURE_NON_GREEDY_ZERO_GROUP_START:
       {
-        /*
-        *  On non-greedy iterations we have to execute the bytecode
-        *  after the group first, if zero iteration is allowed.
-        */
         uint32_t start_idx, iter_idx, offset;
         lit_utf8_byte_t *old_start_p = NULL;
         lit_utf8_byte_t *sub_str_p = NULL;
         re_bytecode_t *old_bc_p;
 
-        old_bc_p = bc_p; /* save the bytecode start position of the group start */
+        old_bc_p = bc_p; 
         start_idx = re_get_value (&bc_p);
         offset = re_get_value (&bc_p);
 
@@ -740,16 +764,14 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
         }
         re_ctx_p->num_of_iterations_p[iter_idx] = 0;
 
-        /* Jump all over to the end of the END opcode. */
         bc_p += offset;
 
-        /* Try to match after the close paren if zero is allowed */
         ecma_completion_value_t match_value = re_match_regexp (re_ctx_p, bc_p, str_curr_p, &sub_str_p);
 
         if (ecma_is_value_true (match_value))
         {
           *out_str_p = sub_str_p;
-          return match_value; /* match */
+          return match_value; 
         }
         else if (ecma_is_completion_value_throw (match_value))
         {
@@ -761,12 +783,11 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
         }
 
         bc_p = old_bc_p;
-        /* FALLTHRU */
       }
-      case RE_OP_CAPTURE_GROUP_START:
-      case RE_OP_CAPTURE_GREEDY_ZERO_GROUP_START:
-      case RE_OP_NON_CAPTURE_GROUP_START:
-      case RE_OP_NON_CAPTURE_GREEDY_ZERO_GROUP_START:
+      RE_OP_CAPTURE_GROUP_START:
+      RE_OP_CAPTURE_GREEDY_ZERO_GROUP_START:
+      RE_OP_NON_CAPTURE_GROUP_START:
+      RE_OP_NON_CAPTURE_GREEDY_ZERO_GROUP_START:
       {
         uint32_t start_idx, iter_idx, old_iteration_cnt, offset;
         lit_utf8_byte_t *sub_str_p = NULL;
@@ -806,7 +827,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (ecma_is_value_true (match_value))
           {
             *out_str_p = sub_str_p;
-            return match_value; /* match */
+            return match_value; 
           }
           else if (ecma_is_completion_value_throw (match_value))
           {
@@ -819,7 +840,6 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
         bc_p = old_bc_p;
         re_ctx_p->num_of_iterations_p[iter_idx] = old_iteration_cnt;
 
-        /* Try to match after the close paren if zero is allowed. */
         if (op == RE_OP_CAPTURE_GREEDY_ZERO_GROUP_START
             || op == RE_OP_NON_CAPTURE_GREEDY_ZERO_GROUP_START)
         {
@@ -829,7 +849,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (ecma_is_value_true (match_value))
           {
             *out_str_p = sub_str_p;
-            return match_value; /* match */
+            return match_value; 
           }
           else if (ecma_is_completion_value_throw (match_value))
           {
@@ -838,23 +858,19 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
         }
 
         re_ctx_p->saved_p[start_idx] = old_start_p;
-        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
       }
-      case RE_OP_CAPTURE_NON_GREEDY_GROUP_END:
-      case RE_OP_NON_CAPTURE_NON_GREEDY_GROUP_END:
+      RE_OP_CAPTURE_NON_GREEDY_GROUP_END:
+      RE_OP_NON_CAPTURE_NON_GREEDY_GROUP_END:
       {
         uint32_t end_idx, iter_idx, min, max;
         re_bytecode_t *old_bc_p;
 
-        /*
-        *  On non-greedy iterations we have to execute the bytecode
-        *  after the group first. Try to iterate only if it fails.
-        */
-        old_bc_p = bc_p; /* save the bytecode start position of the group end */
+        old_bc_p = bc_p; 
         end_idx = re_get_value (&bc_p);
         min = re_get_value (&bc_p);
         max = re_get_value (&bc_p);
-        re_get_value (&bc_p); /* start offset */
+        re_get_value (&bc_p); 
 
         if (RE_IS_CAPTURE_GROUP (op))
         {
@@ -882,7 +898,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (ecma_is_value_true (match_value))
           {
             *out_str_p = sub_str_p;
-            return match_value; /* match */
+            return match_value; 
           }
           else if (ecma_is_completion_value_throw (match_value))
           {
@@ -894,11 +910,9 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
         re_ctx_p->num_of_iterations_p[iter_idx]--;
         bc_p = old_bc_p;
 
-        /* If non-greedy fails and try to iterate... */
-        /* FALLTHRU */
       }
-      case RE_OP_CAPTURE_GREEDY_GROUP_END:
-      case RE_OP_NON_CAPTURE_GREEDY_GROUP_END:
+      RE_OP_CAPTURE_GREEDY_GROUP_END:
+      RE_OP_NON_CAPTURE_GREEDY_GROUP_END:
       {
         uint32_t start_idx, end_idx, iter_idx, min, max, offset;
         lit_utf8_byte_t *old_start_p = NULL;
@@ -926,16 +940,15 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           start_idx = end_idx;
         }
 
-        /* Check the empty iteration if the minimum number of iterations is reached. */
         if (re_ctx_p->num_of_iterations_p[iter_idx] >= min
             && str_curr_p== re_ctx_p->saved_p[start_idx])
         {
-          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+          return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
         }
 
         re_ctx_p->num_of_iterations_p[iter_idx]++;
 
-        old_bc_p = bc_p; /* Save the bytecode end position of the END opcodes for matching after it. */
+        old_bc_p = bc_p; 
         old_end_p = re_ctx_p->saved_p[end_idx];
         re_ctx_p->saved_p[end_idx] = str_curr_p;
 
@@ -951,7 +964,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (ecma_is_value_true (match_value))
           {
             *out_str_p = sub_str_p;
-            return match_value; /* match */
+            return match_value; 
           }
           else if (ecma_is_completion_value_throw (match_value))
           {
@@ -960,11 +973,10 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
 
           re_ctx_p->saved_p[start_idx] = old_start_p;
 
-          /* Try to match alternatives if any. */
           bc_p += offset;
           while (*bc_p == RE_OP_ALTERNATIVE)
           {
-            bc_p++; /* RE_OP_ALTERNATIVE */
+            bc_p++; 
             offset = re_get_value (&bc_p);
 
             old_start_p = re_ctx_p->saved_p[start_idx];
@@ -975,7 +987,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
             if (ecma_is_value_true (match_value))
             {
               *out_str_p = sub_str_p;
-              return match_value; /* match */
+              return match_value; 
             }
             else if (ecma_is_completion_value_throw (match_value))
             {
@@ -990,13 +1002,12 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
         if (re_ctx_p->num_of_iterations_p[iter_idx] >= min
             && re_ctx_p->num_of_iterations_p[iter_idx] <= max)
         {
-          /* Try to match the rest of the bytecode. */
           ecma_completion_value_t match_value = re_match_regexp (re_ctx_p, old_bc_p, str_curr_p, &sub_str_p);
 
           if (ecma_is_value_true (match_value))
           {
             *out_str_p = sub_str_p;
-            return match_value; /* match */
+            return match_value; 
           }
           else if (ecma_is_completion_value_throw (match_value))
           {
@@ -1004,12 +1015,11 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           }
         }
 
-        /* restore if fails */
         re_ctx_p->saved_p[end_idx] = old_end_p;
         re_ctx_p->num_of_iterations_p[iter_idx]--;
-        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
       }
-      case RE_OP_NON_GREEDY_ITERATOR:
+      RE_OP_NON_GREEDY_ITERATOR:
       {
         uint32_t min, max, offset, num_of_iter;
         lit_utf8_byte_t *sub_str_p = NULL;
@@ -1034,7 +1044,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
             if (ecma_is_value_true (match_value))
             {
               *out_str_p = sub_str_p;
-              return match_value; /* match */
+              return match_value; 
             }
             else if (ecma_is_completion_value_throw (match_value))
             {
@@ -1060,9 +1070,9 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           str_curr_p = sub_str_p;
           num_of_iter++;
         }
-        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
       }
-      case RE_OP_GREEDY_ITERATOR:
+      RE_OP_GREEDY_ITERATOR:
       {
         uint32_t min, max, offset, num_of_iter;
         lit_utf8_byte_t *sub_str_p = NULL;
@@ -1104,7 +1114,7 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           if (ecma_is_value_true (match_value))
           {
             *out_str_p = sub_str_p;
-            return match_value; /* match */
+            return match_value; 
           }
           else if (ecma_is_completion_value_throw (match_value))
           {
@@ -1119,19 +1129,22 @@ re_match_regexp (re_matcher_ctx_t *re_ctx_p, /**< RegExp matcher context */
           lit_utf8_read_prev (&str_curr_p);
           num_of_iter--;
         }
-        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
+        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
       }
-      default:
+
+      DEFAULT:
       {
         JERRY_DDLOG ("UNKNOWN opcode (%d)!\n", (uint32_t) op);
         return ecma_make_throw_obj_completion_value (ecma_new_standard_error (ECMA_ERROR_COMMON));
       }
-    }
+
+			op = re_get_opcode (&bc_p);
   }
 
   JERRY_UNREACHABLE ();
-  return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); /* fail */
-} /* regexp_match */
+  return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE); 
+}
+
 
 /**
  * Define the necessary properties for the result array (index, input, length).
