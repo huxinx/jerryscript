@@ -1503,9 +1503,10 @@ ecma_number_to_utf8_string (ecma_number_t num, /**< ecma-number */
             while (t_mod != 0)
             {
               JERRY_ASSERT ((ssize_t) (dst_p - buffer_p + 1) <= buffer_size);
-              *dst_p++ = digits[t / t_mod];
 
-              t -= (t / t_mod) * t_mod;
+              int32_t quot= t / t_mod;
+              *dst_p++ = digits[quot];
+              t -= quot * t_mod;
               t_mod /= 10;
             }
           }
