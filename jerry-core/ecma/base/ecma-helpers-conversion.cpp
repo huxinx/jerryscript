@@ -1467,8 +1467,10 @@ ecma_number_to_utf8_string (ecma_number_t num, /**< ecma-number */
 
             for (int32_t i = 0; i < k - 1; i++)
             {
-              *--dst_p = digits[s % 10];
-              s /= 10;
+              uint64_t ss = s;
+              uint64_t q = ss / 10;
+              *--dst_p = digits[ss - 10 * q];
+              s = q;
             }
 
             *--dst_p = dot_char;
