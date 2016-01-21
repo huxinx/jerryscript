@@ -15,7 +15,6 @@
 
 #include <stdio.h>
 
-#include "bytecode-data.h"
 #include "ecma-alloc.h"
 #include "ecma-array-object.h"
 #include "ecma-builtins.h"
@@ -28,6 +27,7 @@
 #include "ecma-objects.h"
 #include "ecma-objects-general.h"
 #include "ecma-try-catch-macro.h"
+#include "lit-literal.h"
 #include "lit-magic-strings.h"
 #include "parser.h"
 
@@ -1672,9 +1672,8 @@ jerry_cleanup (void)
 
   ecma_finalize ();
   lit_finalize ();
-  bc_finalize ();
-  mem_finalize (is_show_mem_stats);
   vm_finalize ();
+  mem_finalize (is_show_mem_stats);
 } /* jerry_cleanup */
 
 /**
@@ -1724,11 +1723,11 @@ jerry_parse (const jerry_api_char_t* source_p, /**< script source */
 {
   jerry_assert_api_available ();
 
-  bool is_show_instructions = ((jerry_flags & JERRY_FLAG_SHOW_OPCODES) != 0);
+  int is_show_instructions = ((jerry_flags & JERRY_FLAG_SHOW_OPCODES) != 0);
 
   parser_set_show_instrs (is_show_instructions);
 
-  const bytecode_data_header_t *bytecode_data_p;
+  const cbc_compiled_code_t *bytecode_data_p;
   jsp_status_t parse_status;
 
   parse_status = parser_parse_script (source_p,
@@ -1883,7 +1882,7 @@ jerry_parse_and_save_snapshot (const jerry_api_char_t* source_p, /**< script sou
 {
 #ifdef JERRY_ENABLE_SNAPSHOT
   jsp_status_t parse_status;
-  const bytecode_data_header_t *bytecode_data_p;
+  const cbc_compiled_code_t *bytecode_data_p;
 
   if (is_for_global)
   {

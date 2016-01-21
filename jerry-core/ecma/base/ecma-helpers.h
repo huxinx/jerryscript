@@ -27,7 +27,6 @@
 #include "ecma-globals.h"
 #include "lit-strings.h"
 #include "mem-allocator.h"
-#include "opcodes.h"
 
 /**
  * Get value of pointer from specified non-null compressed pointer.
@@ -53,6 +52,8 @@
 #define ECMA_SET_POINTER(field, non_compressed_pointer) MEM_CP_SET_POINTER (field, non_compressed_pointer)
 
 /* ecma-helpers-value.cpp */
+extern ecma_type_t ecma_get_value_type_field (ecma_value_t) __attr_pure___;
+
 extern bool ecma_is_value_empty (ecma_value_t);
 extern bool ecma_is_value_undefined (ecma_value_t);
 extern bool ecma_is_value_null (ecma_value_t);
@@ -84,12 +85,10 @@ extern ecma_completion_value_t ecma_make_throw_obj_completion_value (ecma_object
 extern ecma_completion_value_t ecma_make_empty_completion_value (void);
 extern ecma_completion_value_t ecma_make_return_completion_value (ecma_value_t);
 extern ecma_completion_value_t ecma_make_meta_completion_value (void);
-extern ecma_completion_value_t ecma_make_jump_completion_value (vm_instr_counter_t);
 extern ecma_value_t ecma_get_completion_value_value (ecma_completion_value_t);
 extern ecma_number_t *ecma_get_number_from_completion_value (ecma_completion_value_t) __attr_const___;
 extern ecma_string_t *ecma_get_string_from_completion_value (ecma_completion_value_t) __attr_const___;
 extern ecma_object_t *ecma_get_object_from_completion_value (ecma_completion_value_t) __attr_const___;
-extern vm_instr_counter_t ecma_get_jump_target_from_completion_value (ecma_completion_value_t);
 extern ecma_completion_value_t ecma_copy_completion_value (ecma_completion_value_t);
 extern void ecma_free_completion_value (ecma_completion_value_t);
 
@@ -253,6 +252,9 @@ extern void ecma_set_property_lcached (ecma_property_t *, bool);
 extern ecma_property_descriptor_t ecma_make_empty_property_descriptor (void);
 extern void ecma_free_property_descriptor (ecma_property_descriptor_t *);
 extern ecma_property_descriptor_t ecma_get_property_descriptor_from_property (ecma_property_t *);
+
+extern void ecma_bytecode_ref (void *);
+extern void ecma_bytecode_deref (void *);
 
 /* ecma-helpers-external-pointers.cpp */
 extern bool

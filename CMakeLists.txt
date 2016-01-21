@@ -271,7 +271,7 @@ project (Jerry CXX C ASM)
   endmacro()
 
   add_jerry_compile_warnings(all extra format-nonliteral init-self conversion sign-conversion format-security missing-declarations)
-  add_jerry_compile_flags(-pedantic -Wno-stack-protector -Wno-attributes -Wfatal-errors)
+  add_jerry_compile_flags(-pedantic -Wno-stack-protector -Wno-attributes)
   if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     add_jerry_compile_warnings(logical-op)
   else()
