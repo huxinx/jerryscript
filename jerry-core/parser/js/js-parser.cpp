@@ -73,7 +73,7 @@ parser_compute_indicies (parser_context_t *context_p, /**< context */
       if ((literal_p->status_flags & LEXER_FLAG_SOURCE_PTR)
           && literal_p->prop.length < 0xfff)
       {
-        size_t bytes_to_end = context_p->source_end_p - char_p;
+        size_t bytes_to_end = (size_t)context_p->source_end_p - (size_t)char_p;
 
         if (bytes_to_end < 0xfffff)
         {
@@ -1692,7 +1692,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       if (literal_p->status_flags & LEXER_FLAG_LATE_INIT)
       {
         uint32_t source_data = literal_p->u.source_data;
-        uint8_t *char_p = context_p->source_end_p - (source_data & 0xfffff);
+        uint8_t *char_p = (uint8_t *)(context_p->source_end_p - (source_data & 0xfffff));
         lit_literal_t lit = lit_find_or_create_literal_from_utf8_string (char_p,
                                                                          source_data >> 20);
         literal_pool_p[literal_p->prop.index] = rcs_cpointer_compress (lit);
@@ -2209,10 +2209,10 @@ parser_raise_error (parser_context_t *context_p, /**< context */
 /**
  * Tell parser whether to dump bytecode
  */
+#ifdef PARSER_DUMP_BYTE_CODE
 void
 parser_set_show_instrs (int show_instrs) /**< flag indicating whether to dump bytecode */
 {
-#ifdef PARSER_DUMP_BYTE_CODE
   parser_show_instrs = show_instrs;
-#endif /* PARSER_DUMP_BYTE_CODE */
 } /* parser_set_show_instrs */
+#endif /* PARSER_DUMP_BYTE_CODE */

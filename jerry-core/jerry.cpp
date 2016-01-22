@@ -1723,9 +1723,10 @@ jerry_parse (const jerry_api_char_t* source_p, /**< script source */
 {
   jerry_assert_api_available ();
 
+#ifdef PARSER_DUMP_BYTE_CODE
   int is_show_instructions = ((jerry_flags & JERRY_FLAG_SHOW_OPCODES) != 0);
-
   parser_set_show_instrs (is_show_instructions);
+#endif
 
   const cbc_compiled_code_t *bytecode_data_p;
   jsp_status_t parse_status;
