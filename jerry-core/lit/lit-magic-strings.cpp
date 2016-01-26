@@ -56,8 +56,11 @@ lit_magic_strings_init (void)
 
 #ifndef JERRY_NDEBUG
     ecma_magic_string_max_length = JERRY_MAX (ecma_magic_string_max_length, lit_magic_string_sizes[id]);
-
     JERRY_ASSERT (ecma_magic_string_max_length <= LIT_MAGIC_STRING_LENGTH_LIMIT);
+
+    lit_utf8_size_t length = lit_utf8_string_length (lit_get_magic_string_utf8 (id),
+                                                     lit_magic_string_sizes[id]);
+    JERRY_ASSERT (length == lit_magic_string_sizes[id]);
 #endif /* !JERRY_NDEBUG */
   }
 } /* lit_magic_strings_init */
@@ -116,6 +119,19 @@ lit_get_magic_string_size (lit_magic_string_id_t id) /**< magic string id */
 {
   return lit_magic_string_sizes[id];
 } /* lit_get_magic_string_size */
+
+/**
+ * Get length of specified magic string
+ *
+ * @return length in bytes
+ */
+lit_utf8_size_t
+lit_get_magic_string_length (lit_magic_string_id_t id) /**< magic string id */
+{
+  //There is no Unicode in magic string,
+  //so the length of magic string is equal to the size of magic string
+  return lit_magic_string_sizes[id];
+} /* lit_get_magic_string_length */
 
 /**
  * Get specified magic string as zero-terminated string from external table
