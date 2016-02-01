@@ -2444,7 +2444,7 @@ vm_run (const ecma_compiled_code_t *bytecode_header_p, /**< byte-code data heade
     arg_list_len = 1;
   }
 
-  if (call_stack_size <= INLINE_STACK_SIZE)
+  if (call_stack_size < INLINE_STACK_SIZE)
   {
     return vm_run_with_inline_stack (&frame_ctx,
                                      arg_collection_p,
@@ -2507,7 +2507,7 @@ vm_run_array_args (const ecma_compiled_code_t *bytecode_header_p, /**< byte-code
 
   arg_list_len++;
 
-  if (call_stack_size <= INLINE_STACK_SIZE)
+  if (call_stack_size < INLINE_STACK_SIZE)
   {
     return vm_run_with_inline_stack (&frame_ctx,
                                      arg_list_p,
